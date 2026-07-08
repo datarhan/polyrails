@@ -115,6 +115,25 @@ async def cmd_sell(a: argparse.Namespace) -> None:
         await r.close()
 
 
+async def cmd_attributed(a: argparse.Namespace) -> None:
+    """Report every trade the venue attributes to our builder code + balance."""
+    r = await Rails.connect(_key())
+    try:
+        trades = await r.builder_fills()
+        print(f"trades attributed to builder code: {len(trades)}")
+        total = 0.0
+        for t in trades:
+            usdc = float(getattr(t, "size_usdc", 0) or 0)
+            total += usdc
+            print(f"  {getattr(t, 'side', '?'):4} ${usdc:>5.2f} @ {getattr(t, 'price', '?')} "
+                  f"fee={getattr(t, 'fee_usdc', '?')} status={getattr(t, 'status', '?')} "
+                  f"matched_at={getattr(t, 'matched_at', '?')}")
+        print(f"total attributed volume: ${total:.2f}")
+        print(f"deposit wallet balance:  ${await r.balance():.2f}")
+    finally:
+        await r.close()
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -133,9 +152,10 @@ def main() -> None:
     ps = sub.add_parser("sell")
     ps.add_argument("--token", required=True)
     ps.add_argument("--shares", type=float, required=True)
+    sub.add_parser("attributed")
     a = p.parse_args()
     asyncio.run({"check": cmd_check, "rest": cmd_rest, "fill": cmd_fill,
-                 "sell": cmd_sell}[a.cmd](a))
+                 "sell": cmd_sell, "attributed": cmd_attributed}[a.cmd](a))
 
 
 if __name__ == "__main__":
