@@ -22,6 +22,11 @@ dependencies = [
     "polymarket-client>=0.1.0b16",
 ]
 
+[project.urls]
+Homepage = "https://github.com/datarhan/polyrails"
+Repository = "https://github.com/datarhan/polyrails"
+Changelog = "https://github.com/datarhan/polyrails/blob/master/CHANGELOG.md"
+
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 
