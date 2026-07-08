@@ -21,8 +21,25 @@ logger = logging.getLogger(__name__)
 Side = Literal["BUY", "SELL"]
 
 
-def _default_builder_code() -> str | None:
-    return os.environ.get("POLYRAILS_BUILDER_CODE") or None
+# Maintainer's builder code — the package's default order attribution (public
+# identifier; see README "Funding disclosure"). Override precedence:
+# connect(builder_code=...) > POLYRAILS_BUILDER_CODE env > this default.
+# Pass builder_code="" (or set the env var to "off") to disable attribution.
+MAINTAINER_BUILDER_CODE = (
+    "0x7885f4b3b4c42bbee435fc16f66e7679b461610eb080c9985bdd9fdfd1bffd56"
+)
+
+
+def resolve_builder_code(arg: str | None) -> str | None:
+    """Resolve the builder code for a connection. `""` or `"off"` (arg or env)
+    disables attribution entirely; None falls through env -> maintainer default."""
+    if arg is not None:
+        return arg or None
+    env = os.environ.get("POLYRAILS_BUILDER_CODE")
+    if env is not None:
+        env = env.strip()
+        return None if env in ("", "off") else env
+    return MAINTAINER_BUILDER_CODE
 
 
 async def _drain(paginator: Any) -> list[Any]:
@@ -86,7 +103,7 @@ class Rails:
         from polymarket import AsyncSecureClient
 
         g = await AsyncSecureClient.create(private_key=private_key, wallet=wallet)
-        code = builder_code or _default_builder_code()
+        code = resolve_builder_code(builder_code)
         logger.info("polyrails: acting for wallet %s (type=%s, builder_code=%s)",
                     getattr(g, "wallet", "?"), getattr(g, "wallet_type", "?"),
                     code or "none")
@@ -110,6 +127,21 @@ class Rails:
     async def open_orders(self, *, token_id: str | None = None,
                           market: str | None = None) -> list[Any]:
         return await _drain(self._g.list_open_orders(token_id=token_id, market=market))
+
+    # -- market data -------------------------------------------------------
+
+    async def midpoint(self, token_id: str) -> float:
+        return float(await self._g.get_midpoint(token_id=token_id))
+
+    async def price(self, token_id: str, side: Side) -> float:
+        """Best price to trade `side` right now (BUY -> ask, SELL -> bid)."""
+        return float(await self._g.get_price(token_id=token_id, side=side))
+
+    async def spread(self, token_id: str) -> float:
+        return float(await self._g.get_spread(token_id=token_id))
+
+    async def book(self, token_id: str) -> Any:
+        return await self._g.get_order_book(token_id=token_id)
 
     # -- orders ----------------------------------------------------------
 

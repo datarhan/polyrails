@@ -28,11 +28,14 @@ asyncio.run(main())
 ## What it does
 
 - **Derives API credentials from your EOA** — no dashboard visit needed.
-- **Deploys/binds your V2 deposit wallet** (idempotent) and signs orders as it —
-  the only order path that works for fresh accounts in 2026.
+- **Binds your V2 Deposit Wallet** (idempotent) and signs orders for it —
+  the only order path the venue accepts for fresh accounts since July 2026.
 - Limit (incl. post-only) + market (FAK/FOK) orders, cancels, open orders, balances.
+- Market data: `midpoint()`, `price()`, `spread()`, `book()`.
 - Price ticks conformed automatically (BUY rounds up as a marketable ceiling,
   SELL rounds down — you never lose edge to a tick rejection).
+- Attribution verification built in: `builder_fills()` returns the venue's own
+  ledger of trades credited to a builder code.
 - Clear, honest errors instead of cryptic 400s.
 
 ## What it never does
@@ -45,22 +48,31 @@ asyncio.run(main())
 
 ## Funding disclosure
 
-Orders placed through polyrails carry a builder attribution code
-(`POLYRAILS_BUILDER_CODE` env or `Rails.connect(builder_code=...)`; defaults to the
-maintainer's code when unset). Attribution costs you **nothing** — it routes a share
-of Polymarket's builder rewards pool to whoever's code is attached. That's how free,
-non-custodial open source stays maintained. Set your own code to keep the rewards;
-leave the default to support the project.
+Orders placed through polyrails carry a **builder attribution code** — a public
+identifier in the signed order (that's Polymarket's official
+[Builder Program](https://docs.polymarket.com/builders/overview)). Attribution
+costs you **nothing**: polyrails sets no builder fee (0 bps, verifiable on-chain
+per order); the code only routes a share of Polymarket's builder rewards pool to
+whoever's code is attached. That's how free, non-custodial open source stays
+maintained.
+
+Resolution order: `Rails.connect(builder_code=...)` → `POLYRAILS_BUILDER_CODE`
+env → the maintainer's code (`polyrails`,
+`0x7885f4b3b4c42bbee435fc16f66e7679b461610eb080c9985bdd9fdfd1bffd56`).
+Registered builder? Pass your own code and keep the rewards. Want no
+attribution at all? Set `builder_code=""` (or env `POLYRAILS_BUILDER_CODE=off`).
 
 ## Status
 
-v0.1 — extracted from a private trading system with real on-chain fill history on
-these exact rails. Validation gates and the roadmap live in [GATES.md](GATES.md).
+v0.1 — extracted from a private trading system and validated end-to-end on the
+live venue (order lifecycle + attribution CONFIRMED on the builder ledger; the
+whole validation cost $0.02). Gates and roadmap: [GATES.md](GATES.md),
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Install
 
 ```
-pip install polyrails        # (not yet published — build from source for now)
+pip install polyrails
 ```
 
-Requires Python ≥ 3.11.
+Requires Python ≥ 3.11. MIT licensed.

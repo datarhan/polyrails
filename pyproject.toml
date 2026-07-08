@@ -1,9 +1,23 @@
 [project]
 name = "polyrails"
 version = "0.1.0"
-description = "The Polymarket CLOB V2 execution layer that works: non-custodial orders via the gasless deposit-wallet flow, with builder attribution."
+description = "The Polymarket CLOB V2 execution layer that works: non-custodial orders via the deposit-wallet flow, with builder attribution."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
+keywords = ["polymarket", "prediction-markets", "clob", "trading", "builder"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Typing :: Typed",
+]
 dependencies = [
     "polymarket-client>=0.1.0b16",
 ]

@@ -26,6 +26,42 @@ class TestConformTick:
         assert conform_tick(0.999, "BUY") == 0.99
 
 
+class TestResolveBuilderCode:
+    def _clear_env(self, monkeypatch):
+        monkeypatch.delenv("POLYRAILS_BUILDER_CODE", raising=False)
+
+    def test_defaults_to_maintainer_code(self, monkeypatch):
+        from polyrails.client import MAINTAINER_BUILDER_CODE, resolve_builder_code
+        self._clear_env(monkeypatch)
+        assert resolve_builder_code(None) == MAINTAINER_BUILDER_CODE
+
+    def test_env_overrides_default(self, monkeypatch):
+        from polyrails.client import resolve_builder_code
+        monkeypatch.setenv("POLYRAILS_BUILDER_CODE", "0xabc")
+        assert resolve_builder_code(None) == "0xabc"
+
+    def test_arg_overrides_env(self, monkeypatch):
+        from polyrails.client import resolve_builder_code
+        monkeypatch.setenv("POLYRAILS_BUILDER_CODE", "0xabc")
+        assert resolve_builder_code("0xdef") == "0xdef"
+
+    def test_empty_arg_disables(self, monkeypatch):
+        from polyrails.client import resolve_builder_code
+        self._clear_env(monkeypatch)
+        assert resolve_builder_code("") is None
+
+    def test_env_off_disables(self, monkeypatch):
+        from polyrails.client import resolve_builder_code
+        for v in ("", "off"):
+            monkeypatch.setenv("POLYRAILS_BUILDER_CODE", v)
+            assert resolve_builder_code(None) is None
+
+    def test_maintainer_code_is_valid_bytes32(self):
+        from polyrails.client import MAINTAINER_BUILDER_CODE as c
+        assert c.startswith("0x") and len(c) == 66
+        int(c[2:], 16)
+
+
 class TestDrain:
     def test_flattens_pages_and_passes_raw_items(self):
         import asyncio
@@ -79,6 +115,10 @@ class TestSdkSurface:
         ("list_open_orders", {"token_id", "market"}),
         ("list_builder_trades", {"builder_code"}),
         ("get_balance_allowance", {"asset_type"}),
+        ("get_midpoint", {"token_id"}),
+        ("get_price", {"token_id", "side"}),
+        ("get_spread", {"token_id"}),
+        ("get_order_book", {"token_id"}),
     ])
     def test_method_signatures(self, secure_cls, method, needed):
         fn = getattr(secure_cls, method, None)
