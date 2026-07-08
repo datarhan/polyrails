@@ -30,13 +30,23 @@ builder program gates new entrants (the Apr-2026 audit tightening) such that a
 solo non-copy-trading tool can't join; or payouts demonstrably don't reach the
 profile wallet.
 
-## Stage 1 — product + distribution (deadline: +30 days after S0 pass)
-- Ship the OSS package publicly (name/publishing = USER decision) + docs; announce
-  in the exact places stuck devs search: the SDK GitHub issue threads, r/Polymarket,
-  X. (Outreach posts = USER approval first.)
-- GATE at +30d: ≥3 external active users (distinct non-us wallets with attributed
-  fills) OR ≥$10k external attributed volume. Below both → STOP building features;
-  fix distribution or park the path. Do not rationalize.
+## Stage 1 — product + distribution (deadline: 2026-08-07, +30d from launch)
+LAUNCHED 2026-07-08: PyPI (pip install polyrails), GitHub
+(github.com/datarhan/polyrails, public, MIT). Announced:
+- ✅ GitHub issue #70 comment (Polymarket/py-clob-client-v2) — the highest-intent
+  channel; no reputation gate; live.
+- ✅ X post (@user account).
+- ❌ r/Polymarket — REMOVED by subreddit mods (rule 3, cold-account spam filter;
+  account had −1 karma). NOT retried — reposting/alts is exactly the targeted
+  behavior. Reddit dropped as a channel for this cold launch.
+- TODO (no reputation gate, do next): LaunchPoly directory submission
+  (launchpoly.com/tools); organic PyPI/GitHub discovery.
+
+GATE at 2026-08-07: ≥3 external active users (distinct non-us wallets with
+attributed fills) OR ≥$10k external attributed volume. Below both → STOP building
+features; fix distribution or park the path. Do not rationalize.
+MEASURE with `scripts/ledger.py` (reads the venue's builder ledger, splits
+INTERNAL our-wallet vs EXTERNAL — ground truth, not projection).
 
 ## Stage 2 — revenue honesty (rolling)
 - Weekly ledger: attributed volume (ours vs external), rewards pUSD RECEIVED,
