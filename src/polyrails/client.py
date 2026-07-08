@@ -1,20 +1,20 @@
 """Rails — non-custodial async client over the official `polymarket` unified SDK.
 
 The one order path that works for new accounts under the 2026 deposit-wallet
-flow: EOA -> derived API creds -> AsyncSecureClient -> setup_gasless_wallet ->
-orders signed as the V2 deposit wallet. SDK imports are lazy so importing
-polyrails never requires network or the SDK at module load.
+flow: `AsyncSecureClient.create(private_key)` — the SDK (>=0.1.0b16) derives
+API credentials and binds the signer's Deposit Wallet itself. Do NOT use the
+older two-step flow (manual cred derivation + `setup_gasless_wallet`): since
+~2026-07-01 the venue rejects its orders with "the order signer address has
+to be the address of the API KEY". SDK imports are lazy so importing polyrails
+never requires network or the SDK at module load.
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 import math
 import os
 from dataclasses import dataclass
 from typing import Any, Literal
-
-from polyrails.creds import POLYGON_CHAIN_ID, derive_api_creds
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,19 @@ Side = Literal["BUY", "SELL"]
 
 def _default_builder_code() -> str | None:
     return os.environ.get("POLYRAILS_BUILDER_CODE") or None
+
+
+async def _drain(paginator: Any) -> list[Any]:
+    """Flatten an SDK AsyncPaginator: iteration yields Page objects (with an
+    `.items` tuple), so collect page items — not the pages themselves."""
+    out: list[Any] = []
+    async for page in paginator:
+        items = getattr(page, "items", None)
+        if items is not None:
+            out.extend(items)
+        else:  # future-proof: some paginators may yield raw items
+            out.append(page)
+    return out
 
 
 def conform_tick(price: float, side: Side) -> float:
@@ -66,26 +79,17 @@ class Rails:
 
     @classmethod
     async def connect(cls, private_key: str, *, builder_code: str | None = None,
-                      chain_id: int = POLYGON_CHAIN_ID) -> "Rails":
-        """Derive creds, bind (deploying if needed) the gasless deposit wallet.
+                      wallet: str | None = None) -> "Rails":
+        """Create an authenticated client acting for the signer's Deposit Wallet
+        (or an explicit `wallet`). Credential derivation is handled by the SDK;
+        idempotent across reconnects."""
+        from polymarket import AsyncSecureClient
 
-        Idempotent: an existing deposit wallet is re-bound, never re-deployed.
-        """
-        from polymarket import AsyncSecureClient, BuilderApiKey
-
-        loop = asyncio.get_event_loop()
-        k, s, p = await loop.run_in_executor(None, derive_api_creds, private_key, chain_id)
-        eoa = await AsyncSecureClient.create(
-            private_key=private_key,
-            api_key=BuilderApiKey(key=k, secret=s, passphrase=p),
-        )
-        try:
-            g = await eoa.setup_gasless_wallet()
-        finally:
-            await eoa.close()
+        g = await AsyncSecureClient.create(private_key=private_key, wallet=wallet)
         code = builder_code or _default_builder_code()
-        logger.info("polyrails: bound to deposit wallet %s (type=%s, builder_code=%s)",
-                    g.wallet, g.wallet_type, code or "none")
+        logger.info("polyrails: acting for wallet %s (type=%s, builder_code=%s)",
+                    getattr(g, "wallet", "?"), getattr(g, "wallet_type", "?"),
+                    code or "none")
         return cls(g, code)
 
     # -- account ---------------------------------------------------------
@@ -105,7 +109,7 @@ class Rails:
 
     async def open_orders(self, *, token_id: str | None = None,
                           market: str | None = None) -> list[Any]:
-        return [o async for o in self._g.list_open_orders(token_id=token_id, market=market)]
+        return await _drain(self._g.list_open_orders(token_id=token_id, market=market))
 
     # -- orders ----------------------------------------------------------
 
@@ -144,5 +148,5 @@ class Rails:
         code = builder_code or self.builder_code
         if not code:
             raise ValueError("no builder_code configured (POLYRAILS_BUILDER_CODE or connect(builder_code=...))")
-        return [t async for t in self._g.list_builder_trades(
-            builder_code=code, market=market, token_id=token_id)]
+        return await _drain(self._g.list_builder_trades(
+            builder_code=code, market=market, token_id=token_id))

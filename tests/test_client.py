@@ -26,6 +26,24 @@ class TestConformTick:
         assert conform_tick(0.999, "BUY") == 0.99
 
 
+class TestDrain:
+    def test_flattens_pages_and_passes_raw_items(self):
+        import asyncio
+
+        from polyrails.client import _drain
+
+        class Page:
+            def __init__(self, items):
+                self.items = items
+
+        async def pages():
+            yield Page(("a", "b"))
+            yield Page(())
+            yield "raw-item"
+
+        assert asyncio.run(_drain(pages())) == ["a", "b", "raw-item"]
+
+
 class TestOrderResult:
     def test_from_sdk_maps_fields(self):
         class Stub:
@@ -72,9 +90,9 @@ class TestSdkSurface:
     def test_connect_entrypoints(self, secure_cls):
         assert hasattr(secure_cls, "create")
         create_params = set(inspect.signature(secure_cls.create).parameters)
-        assert {"private_key", "api_key"} <= create_params
-        # setup_gasless_wallet is an instance method on the created client
-        assert hasattr(secure_cls, "setup_gasless_wallet")
+        # b16+ contract: create(private_key, wallet=None) binds the signer's
+        # Deposit Wallet and derives credentials itself
+        assert {"private_key", "wallet"} <= create_params
 
     def test_rails_never_imports_sdk_at_module_load(self):
         import sys

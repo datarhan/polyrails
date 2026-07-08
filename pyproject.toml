@@ -5,8 +5,7 @@ description = "The Polymarket CLOB V2 execution layer that works: non-custodial 
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "polymarket-client>=0.1.0b3",
-    "py-clob-client-v2>=1.0.1",
+    "polymarket-client>=0.1.0b16",
 ]
 
 [project.optional-dependencies]
