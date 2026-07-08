@@ -74,20 +74,23 @@ async def cmd_fill(a: argparse.Namespace) -> None:
         seen = None
         while time.time() < deadline and seen is None:
             for t in await r.builder_fills(token_id=a.token):
-                oid = str(getattr(t, "order_id", getattr(t, "taker_order_id", "")))
-                if res.order_id and res.order_id in oid:
+                oid = str(getattr(t, "taker_order_hash", "") or "")
+                if res.order_id and oid and res.order_id.lower() == oid.lower():
                     seen = t
                     break
             if seen is None:
                 await asyncio.sleep(5)
         if seen is not None:
-            print(f"ATTRIBUTION CONFIRMED: builder trade recorded -> {seen}")
+            print(f"ATTRIBUTION CONFIRMED: builder={getattr(seen, 'builder', '?')} "
+                  f"side={getattr(seen, 'side', '?')} size_usdc={getattr(seen, 'size_usdc', '?')} "
+                  f"price={getattr(seen, 'price', '?')} fee_usdc={getattr(seen, 'fee_usdc', '?')} "
+                  f"status={getattr(seen, 'status', '?')}")
             print("FILL CANARY PASS (gate S0c)")
         else:
-            # order-id match can be brittle across models; any trade under our code
-            # in the window is still evidence — report what we saw
+            # hash match can be brittle; any trade under our code in the window is
+            # still evidence — report what we saw
             recent = await r.builder_fills(token_id=a.token)
-            print(f"no order-id match in {a.wait}s; trades under our code on this "
+            print(f"no order-hash match in {a.wait}s; trades under our code on this "
                   f"token: {len(recent)}")
             print("FILL CANARY INCONCLUSIVE — inspect manually" if not recent
                   else f"ATTRIBUTION LIKELY (inspect): {recent[-1]}")
