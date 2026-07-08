@@ -39,8 +39,10 @@ LAUNCHED 2026-07-08: PyPI (pip install polyrails), GitHub
 - ❌ r/Polymarket — REMOVED by subreddit mods (rule 3, cold-account spam filter;
   account had −1 karma). NOT retried — reposting/alts is exactly the targeted
   behavior. Reddit dropped as a channel for this cold launch.
-- TODO (no reputation gate, do next): LaunchPoly directory submission
-  (launchpoly.com/tools); organic PyPI/GitHub discovery.
+- ✅ LaunchPoly directory (launchpoly.com) — submitted 2026-07-08, Pending Review
+  (free tier, 48–72h; categories Developer Tools/Trading Bots/Data & APIs).
+- Ongoing (no reputation gate): organic PyPI/GitHub discovery; the bot's own
+  attributed live volume once it trades.
 
 GATE at 2026-08-07: ≥3 external active users (distinct non-us wallets with
 attributed fills) OR ≥$10k external attributed volume. Below both → STOP building
