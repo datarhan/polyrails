@@ -102,6 +102,19 @@ async def cmd_fill(a: argparse.Namespace) -> None:
         await r.close()
 
 
+async def cmd_sell(a: argparse.Namespace) -> None:
+    """Unwind: marketable FAK sell of held shares (used when fill's --unwind
+    raced on-chain settlement — conditional tokens land a few seconds after
+    the buy matches)."""
+    r = await Rails.connect(_key())
+    try:
+        res = await r.market(a.token, "SELL", shares=a.shares, order_type="FAK")
+        print(f"sell: ok={res.ok} status={res.status} shares_offered={a.shares} "
+              f"received=${res.taking_amount:.2f}")
+    finally:
+        await r.close()
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -117,8 +130,12 @@ def main() -> None:
     pf.add_argument("--usdc", type=float, default=1.10)
     pf.add_argument("--wait", type=int, default=90, help="attribution poll seconds")
     pf.add_argument("--unwind", action="store_true", help="market-sell the shares back")
+    ps = sub.add_parser("sell")
+    ps.add_argument("--token", required=True)
+    ps.add_argument("--shares", type=float, required=True)
     a = p.parse_args()
-    asyncio.run({"check": cmd_check, "rest": cmd_rest, "fill": cmd_fill}[a.cmd](a))
+    asyncio.run({"check": cmd_check, "rest": cmd_rest, "fill": cmd_fill,
+                 "sell": cmd_sell}[a.cmd](a))
 
 
 if __name__ == "__main__":
